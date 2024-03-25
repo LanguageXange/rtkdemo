@@ -17,7 +17,7 @@ const ReactionButton = ({ post }:PostProp) => {
   const reactionBtns = Object.entries(emojis).map(([name, emoji]) => {
     return (
       <button
-        key="name"
+        key={name}
         onClick={() =>
           dispatch(addReaction({ postId: post.id, reaction: name as EmojiName }))
         }

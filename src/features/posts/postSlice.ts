@@ -1,33 +1,59 @@
-import { createSlice, nanoid, PayloadAction } from "@reduxjs/toolkit";
+import {
+  createSlice,
+  nanoid,
+  PayloadAction,
+  createAsyncThunk,
+} from "@reduxjs/toolkit";
 import { RootState } from "../../app/store";
 import { sub } from "date-fns";
+import axios from "axios";
+const POST_URL = "https://jsonplaceholder.typicode.com/posts";
 
-const initialState = [
-  {
-    id: "1",
-    title: "First Title",
-    content: "some content",
-    postedOn: sub(new Date(), { minutes: 10 }).toISOString(),
-    userId: "1",
-    reactions: {
-      thumbsUp: 0,
-      heart: 0,
-      coffee: 0,
-    },
-  },
-  {
-    id: "2",
-    title: "Second Title",
-    content: "some more content",
-    postedOn: sub(new Date(), { minutes: 10 }).toISOString(),
-    userId: "1",
-    reactions: {
-      thumbsUp: 0,
-      heart: 0,
-      coffee: 0,
-    },
-  },
-];
+// thunk middle ware 1919
+// https://redux-toolkit.js.org/api/createAsyncThunk
+
+export const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => {
+  try {
+    const posts = await axios.get(POST_URL);
+    return posts.data.slice(0, 4);
+  } catch (err) {
+    return err.message;
+  }
+});
+
+const initialState = {
+  posts: [],
+  status: "idle", // "idle" | "loading" | "succeeded" | "failed",
+  error: null,
+};
+
+// const initialState = [
+//   {
+//     id: "1",
+//     title: "First Title",
+//     content: "some content",
+//     postedOn: sub(new Date(), { minutes: 10 }).toISOString(),
+//     userId: "1",
+//     reactions: {
+//       thumbsUp: 0,
+//       heart: 0,
+//       coffee: 0,
+//     },
+//   },
+//   {
+//     id: "2",
+//     title: "Second Title",
+//     content: "some more content",
+//     postedOn: sub(new Date(), { minutes: 10 }).toISOString(),
+//     userId: "1",
+//     reactions: {
+//       thumbsUp: 0,
+//       heart: 0,
+//       coffee: 0,
+//     },
+//   },
+// ];
+
 export interface SinglePost {
   id: string;
   title: string;
@@ -50,7 +76,7 @@ export const postsSlice = createSlice({
       }>
     ) {
       const { postId, reaction } = action.payload;
-      const existPost = state.find((post) => post.id === postId);
+      const existPost = state.posts.find((post) => post.id === postId);
       if (existPost) {
         existPost.reactions[reaction]++;
       }
@@ -58,7 +84,7 @@ export const postsSlice = createSlice({
 
     addPost: {
       reducer(state, action: PayloadAction<SinglePost>) {
-        state.push(action.payload);
+        state.posts.push(action.payload);
       },
       prepare(title, content, userId) {
         return {
@@ -78,9 +104,44 @@ export const postsSlice = createSlice({
       },
     },
   },
-});
+  extraReducers(builder) {
+    builder
+      .addCase(fetchPosts.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchPosts.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        let min = 1;
+        // console.log(action,'what is action')
+        // the json placeholder api doesn't include postedOn and reactions
+        const loadedPosts = action.payload.map((post) => {
+          post.postedOn = sub(new Date(), { minutes: min++ }).toISOString();
+          post.reactions = {
+            thumbsUp: 0,
+            heart: 0,
+            coffee: 0,
+          };
+          return post;
+        });
 
-export const selectAllPosts = (state: RootState) => state.posts;
+        state.posts = loadedPosts;
+      })
+      .addCase(fetchPosts.rejected, (state, action) => {
+        (state.status = "failed"), (state.error = action.error.message);
+      });
+  },
+});
+// https://redux-toolkit.js.org/api/createslice#extrareducers
+
+// extraReducers allows createSlice to respond and update its own state
+// in response to other action types besides the types it has generated.
+// each individual case reducer inside of extraReducers
+// will NOT generate a new action type or action creator.
+
+// SELECTORS
+export const selectAllPosts = (state: RootState) => state.posts.posts;
+export const getPostsStatus = (state: RootState) => state.posts.status;
+export const getPostsError = (state: RootState) => state.posts.error;
 
 export const { addPost, addReaction } = postsSlice.actions;
 
