@@ -15,11 +15,24 @@ const POST_URL = "https://jsonplaceholder.typicode.com/posts";
 export const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => {
   try {
     const posts = await axios.get(POST_URL);
-    return posts.data.slice(0, 4);
+    // console.log(posts.data[0],'post data')
+    return posts.data.sort(()=> Math.random() - 0.5).slice(0,5)
   } catch (err) {
     return err.message;
   }
 });
+
+
+
+export const addNewPost = createAsyncThunk('posts/addNewPost',async(initialPost)=>{
+  try {
+    const response = await axios.post(POST_URL, initialPost)
+    return response.data
+    
+  } catch (error) {
+     return error
+  }
+})
 
 const initialState = {
   posts: [],
@@ -76,33 +89,34 @@ export const postsSlice = createSlice({
       }>
     ) {
       const { postId, reaction } = action.payload;
+      console.log(action.payload,'what is action payalod')
       const existPost = state.posts.find((post) => post.id === postId);
       if (existPost) {
         existPost.reactions[reaction]++;
       }
     },
 
-    addPost: {
-      reducer(state, action: PayloadAction<SinglePost>) {
-        state.posts.push(action.payload);
-      },
-      prepare(title, content, userId) {
-        return {
-          payload: {
-            id: nanoid(),
-            title,
-            content,
-            userId,
-            postedOn: new Date().toISOString(),
-            reactions: {
-              thumbsUp: 0,
-              heart: 0,
-              coffee: 0,
-            },
-          },
-        };
-      },
-    },
+    // addPost: {
+    //   reducer(state, action: PayloadAction<SinglePost>) {
+    //     state.posts.push(action.payload);
+    //   },
+    //   prepare(title, content, userId) {
+    //     return {
+    //       payload: {
+    //         id: nanoid(),
+    //         title,
+    //         content,
+    //         userId,
+    //         postedOn: new Date().toISOString(),
+    //         reactions: {
+    //           thumbsUp: 0,
+    //           heart: 0,
+    //           coffee: 0,
+    //         },
+    //       },
+    //     };
+    //   },
+    // },
   },
   extraReducers(builder) {
     builder
@@ -128,7 +142,20 @@ export const postsSlice = createSlice({
       })
       .addCase(fetchPosts.rejected, (state, action) => {
         (state.status = "failed"), (state.error = action.error.message);
-      });
+      })
+      .addCase(addNewPost.fulfilled,(state,action)=>{
+        action.payload.id = nanoid() // make sure id is unique otherwise updatin reactions will update previous post
+        action.payload.userId = Number(action.payload.userId)
+        action.payload.postedOn = new Date().toISOString()
+        action.payload.reactions = {
+          thumbsUp: 0,
+          heart: 0,
+          coffee: 0,
+        }
+        console.log(action.payload,'what is action payload in addNewPost Thunk')
+
+        state.posts.push(action.payload)
+      })
   },
 });
 // https://redux-toolkit.js.org/api/createslice#extrareducers

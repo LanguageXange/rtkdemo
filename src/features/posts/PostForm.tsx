@@ -1,8 +1,8 @@
 import { SetStateAction, Dispatch, useState, ChangeEvent } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addPost } from "./postSlice";
-import { selectAllUsers, User } from "../users/userSlice";
 
+import { selectAllUsers, User } from "../users/userSlice";
+import { addNewPost } from "./postSlice"; // thunk
 
 const PostForm: React.FC = () => {
   const dispatch = useDispatch();
@@ -10,6 +10,8 @@ const PostForm: React.FC = () => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [userId, setUserId] = useState("");
+
+  const [requestStatus, setRequestStatus] = useState("idle");
 
   const users = useSelector(selectAllUsers);
 
@@ -24,16 +26,31 @@ const PostForm: React.FC = () => {
   const onContentChanged = handleChange(setContent);
   const onAuthorChanged = handleChange(setUserId);
 
-  const onSavePostClicked = () => {
-    if (title && content) {
-      dispatch(addPost(title, content, userId));
-      setTitle("");
-      setContent("");
-      setUserId("")
+  // refactor
+  const canSave =
+    [title, content, userId].every(Boolean) && requestStatus === "idle";
+
+  // https://redux-toolkit.js.org/api/createAsyncThunk#unwrapping-result-actions
+  const onSavePostClicked = async () => {
+    if (canSave) {
+      try {
+        setRequestStatus("pending");
+
+        const result = await dispatch(
+          addNewPost({ title, body: content, userId })
+        ).unwrap();
+        console.log(result, "what is result");
+
+        setTitle("");
+        setContent("");
+        setUserId("");
+      } catch (error) {
+        console.error("failed to save", error);
+      } finally {
+        setRequestStatus("idle");
+      }
     }
   };
-
-  const canSave = Boolean(title) && Boolean(content) && Boolean(userId);
 
   const usersOptions = users.map((user: User) => (
     <option key={user.id} value={user.id}>
@@ -41,9 +58,17 @@ const PostForm: React.FC = () => {
     </option>
   ));
   return (
-    <section style={{border:"2px solid #555"}}>
+    <section style={{ border: "2px solid #555" }}>
       <h2>Add a New Post</h2>
-      <form style={{display:"flex", flexDirection:"column", gap:"5px",width:"85%"}}>
+  
+      <form
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "5px",
+          width: "85%",
+        }}
+      >
         <label htmlFor="postTitle">Post Title:</label>
         <input
           type="text"
@@ -65,7 +90,7 @@ const PostForm: React.FC = () => {
           onChange={onContentChanged}
         />
         <button type="button" onClick={onSavePostClicked} disabled={!canSave}>
-          Save Post
+        {requestStatus === "pending" ? "Saving ..." : "Submit"}
         </button>
       </form>
     </section>

@@ -9,12 +9,12 @@ export const logger: Middleware<object, RootState> =
     if (!action.type) {
       return next(action);
     }
-    console.log("----------");
-    console.log("Action Type: ", action.type);
-    console.log("Action Payload: ", action.payload);
-    console.log("%c Current State: ", "background:green", store.getState());
+    // console.log("----------");
+    // console.log("Action Type: ", action.type);
+    // console.log("Action Payload: ", action.payload);
+    // console.log("%c Current State: ", "background:green", store.getState());
 
     next(action);
 
-    console.log("%c Next State: ", "background:#4c0ffb", store.getState());
+   // console.log("%c Next State: ", "background:#4c0ffb", store.getState());
   };

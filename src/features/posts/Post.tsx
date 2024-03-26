@@ -21,11 +21,9 @@ const TimeAgo = ({ timestamp }: { timestamp: string }) => {
   return <p> {timeAgo}</p>;
 };
 
-const PostExerpt = ({post}) =>{
+const PostExerpt = ({ post }) => {
   return (
-    <article
-      style={{ border: "1px solid #999", marginBottom: "10px" }}
-    >
+    <article style={{ border: "1px solid #999", marginBottom: "10px" }}>
       <h2>{post.title}</h2>
       <p>{post.body}</p>
       <ReactionButton post={post} />
@@ -33,7 +31,7 @@ const PostExerpt = ({post}) =>{
       <PostAuthor userId={post.userId} />
     </article>
   );
-}
+};
 
 // https://date-fns.org/v3.6.0/docs/sub
 const Post = () => {
@@ -55,7 +53,9 @@ const Post = () => {
     const orderedPosts = [...posts].sort((a, b) =>
       b.postedOn.localeCompare(a.postedOn)
     );
-    content = orderedPosts.map((post) => <PostExerpt post={post} key={post.id}/>);
+    content = orderedPosts.map((post) => (
+      <PostExerpt post={post} key={post.title} />
+    ));
   } else if (postsStatus === "failed") {
     content = <p>{postsError}</p>;
   }
@@ -69,11 +69,9 @@ const Post = () => {
 
   return (
     <>
-      <h2>My Post</h2>
-
-      {content}
-
       <PostForm />
+      <h2>My Post</h2>
+      {content}
     </>
   );
 };
