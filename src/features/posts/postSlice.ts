@@ -16,7 +16,8 @@ export const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => {
   try {
     const posts = await axios.get(POST_URL);
     // console.log(posts.data[0],'post data')
-    return posts.data.sort(()=> Math.random() - 0.5).slice(0,5)
+    //return posts.data.sort(() => Math.random() - 0.5).slice(0, 5);
+    return posts.data.slice(0,10)
   } catch (err) {
     return err.message;
   }
@@ -24,15 +25,17 @@ export const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => {
 
 
 
-export const addNewPost = createAsyncThunk('posts/addNewPost',async(initialPost)=>{
-  try {
-    const response = await axios.post(POST_URL, initialPost)
-    return response.data
-    
-  } catch (error) {
-     return error
+export const addNewPost = createAsyncThunk(
+  "posts/addNewPost",
+  async (initialPost) => {
+    try {
+      const response = await axios.post(POST_URL, initialPost);
+      return response.data;
+    } catch (error) {
+      return error;
+    }
   }
-})
+);
 
 const initialState = {
   posts: [],
@@ -89,8 +92,8 @@ export const postsSlice = createSlice({
       }>
     ) {
       const { postId, reaction } = action.payload;
-      console.log(action.payload,'what is action payalod')
-      const existPost = state.posts.find((post) => post.id === postId);
+      //console.log(action.payload, "what is action payalod");
+      const existPost = state.posts.find((post) => post.id == postId);
       if (existPost) {
         existPost.reactions[reaction]++;
       }
@@ -143,19 +146,22 @@ export const postsSlice = createSlice({
       .addCase(fetchPosts.rejected, (state, action) => {
         (state.status = "failed"), (state.error = action.error.message);
       })
-      .addCase(addNewPost.fulfilled,(state,action)=>{
-        action.payload.id = nanoid() // make sure id is unique otherwise updatin reactions will update previous post
-        action.payload.userId = Number(action.payload.userId)
-        action.payload.postedOn = new Date().toISOString()
+      .addCase(addNewPost.fulfilled, (state, action) => {
+        action.payload.id = nanoid(); // make sure id is unique otherwise updatin reactions will update previous post
+        action.payload.userId = Number(action.payload.userId);
+        action.payload.postedOn = new Date().toISOString();
         action.payload.reactions = {
           thumbsUp: 0,
           heart: 0,
           coffee: 0,
-        }
-        console.log(action.payload,'what is action payload in addNewPost Thunk')
+        };
+        console.log(
+          action.payload,
+          "what is action payload in addNewPost Thunk"
+        );
 
-        state.posts.push(action.payload)
-      })
+        state.posts.push(action.payload);
+      });
   },
 });
 // https://redux-toolkit.js.org/api/createslice#extrareducers
@@ -169,6 +175,10 @@ export const postsSlice = createSlice({
 export const selectAllPosts = (state: RootState) => state.posts.posts;
 export const getPostsStatus = (state: RootState) => state.posts.status;
 export const getPostsError = (state: RootState) => state.posts.error;
+export const getPostById = (state: RootState, postId:number) => {
+  const posts: SinglePost[] = state.posts.posts;
+  return posts.find((post) => post.id === postId);
+};
 
 export const { addPost, addReaction } = postsSlice.actions;
 

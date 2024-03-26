@@ -4,8 +4,6 @@ import axios from 'axios'
 export type User = {
     id:string;
     name:string;
-    username?:string;
-    email?:string;
 }
 
 const USER_URL  = "https://jsonplaceholder.typicode.com/users"

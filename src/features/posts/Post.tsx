@@ -10,6 +10,7 @@ import PostAuthor from "./PostAuthor";
 import { parseISO, formatDistanceToNow } from "date-fns";
 import ReactionButton from "./ReactionButton";
 import { useEffect } from "react";
+import { Link, Outlet } from "react-router-dom";
 
 const TimeAgo = ({ timestamp }: { timestamp: string }) => {
   let timeAgo = ``;
@@ -21,11 +22,17 @@ const TimeAgo = ({ timestamp }: { timestamp: string }) => {
   return <p> {timeAgo}</p>;
 };
 
-const PostExerpt = ({ post }) => {
+export const PostExerpt = ({ post }) => {
   return (
     <article style={{ border: "1px solid #999", marginBottom: "10px" }}>
-      <h2>{post.title}</h2>
+      <Link to={`${post.id}`}>
+        <h2>
+          {post.title} with post id {post.id}
+        </h2>
+      </Link>
+
       <p>{post.body}</p>
+      <Link to={`/myposts/edit/${post.id}`}>Edit this Post</Link>
       <ReactionButton post={post} />
       <TimeAgo timestamp={post.postedOn} />
       <PostAuthor userId={post.userId} />
@@ -72,6 +79,7 @@ const Post = () => {
       <PostForm />
       <h2>My Post</h2>
       {content}
+      <Outlet/>
     </>
   );
 };

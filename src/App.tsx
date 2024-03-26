@@ -4,7 +4,7 @@ import Post from "./features/posts/Post";
 
 function App() {
   return (
-    <div className="container">
+    <div>
       <h1>RTK demo</h1>
       <Counter />
 
@@ -16,7 +16,6 @@ function App() {
           margin: "25px 0",
         }}
       ></div>
-      <Post />
     </div>
   );
 }
