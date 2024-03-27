@@ -10,11 +10,15 @@ import Layout from "./components/Layout.tsx";
 import PostPage from "./features/posts/PostPage.tsx";
 import Post from "./features/posts/Post.tsx";
 import EditPostForm from "./features/posts/EditPostForm.tsx";
+import { fetchPosts } from "./features/posts/postSlice.ts";
 
 
 
 // we want to load users immediately when app loads
 store.dispatch(fetchUsers());
+store.dispatch(fetchPosts());
+
+
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

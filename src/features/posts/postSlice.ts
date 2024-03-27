@@ -24,12 +24,19 @@ export const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => {
 });
 
 // update post title thunk
+// unable to update post if the ID exceeds 100 (the api only provides 100 posts)
 export const updatePost = createAsyncThunk(
   "posts/updatePost",
   async (initialPost) => {
     const { id } = initialPost;
-    const response = await axios.put(`${POST_URL}/${id}`, initialPost);
-    return response.data;
+    try {
+      const response = await axios.put(`${POST_URL}/${id}`, initialPost);
+      return response.data;
+    } catch (err) {
+      //return err.message;
+      throw Error("unable to update your post sorry!");
+      // return { id: Number(id), error: 500, title: "noooo error" };
+    }
   }
 );
 
@@ -38,11 +45,15 @@ export const deletePost = createAsyncThunk("posts/deletePost", async (data) => {
   const { id } = data;
   try {
     const response = await axios.delete(`${POST_URL}/${id}`);
-    if (response?.status === 200)
+    if (response?.status === 200) {
       return { id: Number(id), message: "sucessfully delete the post" };
-    return { id:Number(id), message: "unable to delete the post" };
+    }
+
+    return { id: Number(id), message: "unable to delete the post" };
   } catch (err) {
-    return err.message;
+    // if we try to delete a post that doesn't exist
+    // /myposts/edit/200
+    return { id, message: err?.message };
   }
 });
 
@@ -58,8 +69,6 @@ export const addNewPost = createAsyncThunk(
     }
   }
 );
-
-
 
 // const initialState = [
 //   {
@@ -169,7 +178,7 @@ export const postsSlice = createSlice({
         (state.status = "failed"), (state.error = action.error.message);
       })
       .addCase(addNewPost.fulfilled, (state, action) => {
-        action.payload.id = nanoid(); // make sure id is unique otherwise updatin reactions will update previous post
+        // action.payload.id = nanoid(); // make sure id is unique otherwise updatin reactions will update previous post
         action.payload.userId = Number(action.payload.userId);
         action.payload.postedOn = new Date().toISOString();
         action.payload.reactions = {
@@ -189,6 +198,9 @@ export const postsSlice = createSlice({
         if (existPost) {
           existPost.title = title;
         }
+      })
+      .addCase(updatePost.pending, (state, action) => {
+        console.log(action, "what is action in pending");
       })
       .addCase(deletePost.fulfilled, (state, action) => {
         const { id } = action.payload;

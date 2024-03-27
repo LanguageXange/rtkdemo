@@ -35,7 +35,7 @@ const EditPostForm = () => {
       setTitle("");
       navigate(`/myposts/${postId}`);
     } catch (error) {
-      console.error(error, "save post error");
+      console.error(error.message, "save post error");
     } finally {
       setRequestStatus("idle");
     }
