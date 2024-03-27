@@ -7,6 +7,7 @@ import { PostExerpt } from "./Post";
 import { useParams } from "react-router-dom";
 
 const PostPage = () => {
+
   const { postId } = useParams();
 
   const singlePost = useSelector((state: RootState) =>

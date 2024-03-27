@@ -11,6 +11,8 @@ import PostPage from "./features/posts/PostPage.tsx";
 import Post from "./features/posts/Post.tsx";
 import EditPostForm from "./features/posts/EditPostForm.tsx";
 import { fetchPosts } from "./features/posts/postSlice.ts";
+import UsersList from "./features/users/UserList.tsx";
+import UserPage from "./features/users/UserPage.tsx";
 
 
 
@@ -32,6 +34,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path=":postId" element={<PostPage/>} />
               <Route path="edit/:postId" element={<EditPostForm/>} />
             </Route>
+
+            <Route path="user">
+          <Route index element={<UsersList />} />
+          <Route path=":userId" element={<UserPage />} />
+        </Route>
             <Route path="*" element={<p>this is a 404 page</p>} />
           </Route>
         </Routes>

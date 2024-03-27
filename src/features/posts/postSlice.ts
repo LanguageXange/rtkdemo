@@ -2,6 +2,8 @@ import {
   createSlice,
   nanoid,
   PayloadAction,
+  createSelector,
+  createEntityAdapter,
   createAsyncThunk,
 } from "@reduxjs/toolkit";
 import { RootState } from "../../app/store";
@@ -16,8 +18,8 @@ export const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => {
   try {
     const posts = await axios.get(POST_URL);
     // console.log(posts.data[0], "post data");
-    //return posts.data.sort(() => Math.random() - 0.5).slice(0, 5);
-    return posts.data.slice(0, 10);
+    //return posts.data.sort(() => Math.random() - 0.5).slice(0, 30);
+    return posts.data.slice(0, 30);
   } catch (err) {
     return err.message;
   }
@@ -109,6 +111,7 @@ const initialState = {
   posts: [] as SinglePost[],
   status: "idle", // "idle" | "loading" | "succeeded" | "failed",
   error: null,
+  count: 0, // for demonstrating optimization
 };
 // https://redux-toolkit.js.org/api/createslice#customizing-generated-action-creators
 export const postsSlice = createSlice({
@@ -129,29 +132,11 @@ export const postsSlice = createSlice({
         existPost.reactions[reaction]++;
       }
     },
-
-    // addPost: {
-    //   reducer(state, action: PayloadAction<SinglePost>) {
-    //     state.posts.push(action.payload);
-    //   },
-    //   prepare(title, content, userId) {
-    //     return {
-    //       payload: {
-    //         id: nanoid(),
-    //         title,
-    //         content,
-    //         userId,
-    //         postedOn: new Date().toISOString(),
-    //         reactions: {
-    //           thumbsUp: 0,
-    //           heart: 0,
-    //           coffee: 0,
-    //         },
-    //       },
-    //     };
-    //   },
-    // },
+    increaseCount(state) {
+      state.count++;
+    },
   },
+
   extraReducers(builder) {
     builder
       .addCase(fetchPosts.pending, (state) => {
@@ -226,6 +211,14 @@ export const getPostById = (state: RootState, postId: number) => {
   return posts.find((post) => post.id === postId);
 };
 
-export const { addPost, addReaction } = postsSlice.actions;
+export const getCount = (state: RootState) => state.posts.count;
+
+// memoized selector
+export const selectPostsByUser = createSelector(
+  [selectAllPosts, (state, userId) => userId],
+  (posts, userId) => posts.filter((post) => post.userId === userId)
+);
+
+export const { addReaction, increaseCount } = postsSlice.actions;
 
 export default postsSlice.reducer;
