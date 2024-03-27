@@ -27,7 +27,7 @@ const PostPage = () => {
   return (
     <section>
       {postsStatus === "loading" && <p>loading</p>} 
-      <h1>postId = {postId}</h1>
+      <h1>Single Post</h1>
       {singlePost && (postsStatus === "succeeded") ? <PostExerpt post={singlePost} /> : <p>post not found</p>}
     </section>
   );

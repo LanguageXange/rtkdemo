@@ -15,21 +15,43 @@ const POST_URL = "https://jsonplaceholder.typicode.com/posts";
 export const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => {
   try {
     const posts = await axios.get(POST_URL);
-    // console.log(posts.data[0],'post data')
+    // console.log(posts.data[0], "post data");
     //return posts.data.sort(() => Math.random() - 0.5).slice(0, 5);
-    return posts.data.slice(0,10)
+    return posts.data.slice(0, 10);
   } catch (err) {
     return err.message;
   }
 });
 
+// update post title thunk
+export const updatePost = createAsyncThunk(
+  "posts/updatePost",
+  async (initialPost) => {
+    const { id } = initialPost;
+    const response = await axios.put(`${POST_URL}/${id}`, initialPost);
+    return response.data;
+  }
+);
 
+// delete post thunk
+export const deletePost = createAsyncThunk("posts/deletePost", async (data) => {
+  const { id } = data;
+  try {
+    const response = await axios.delete(`${POST_URL}/${id}`);
+    if (response?.status === 200)
+      return { id: Number(id), message: "sucessfully delete the post" };
+    return { id:Number(id), message: "unable to delete the post" };
+  } catch (err) {
+    return err.message;
+  }
+});
 
 export const addNewPost = createAsyncThunk(
   "posts/addNewPost",
   async (initialPost) => {
     try {
       const response = await axios.post(POST_URL, initialPost);
+      //console.log(response,'what is response in addNewPost')
       return response.data;
     } catch (error) {
       return error;
@@ -37,11 +59,7 @@ export const addNewPost = createAsyncThunk(
   }
 );
 
-const initialState = {
-  posts: [],
-  status: "idle", // "idle" | "loading" | "succeeded" | "failed",
-  error: null,
-};
+
 
 // const initialState = [
 //   {
@@ -78,7 +96,11 @@ export interface SinglePost {
   postedOn: string;
   reactions: { thumbsUp: number; heart: number; coffee: number };
 }
-
+const initialState = {
+  posts: [] as SinglePost[],
+  status: "idle", // "idle" | "loading" | "succeeded" | "failed",
+  error: null,
+};
 // https://redux-toolkit.js.org/api/createslice#customizing-generated-action-creators
 export const postsSlice = createSlice({
   name: "post",
@@ -159,8 +181,20 @@ export const postsSlice = createSlice({
           action.payload,
           "what is action payload in addNewPost Thunk"
         );
-
         state.posts.push(action.payload);
+      })
+      .addCase(updatePost.fulfilled, (state, action) => {
+        const { id, title } = action.payload;
+        const existPost = state.posts.find((post) => post.id === id);
+        if (existPost) {
+          existPost.title = title;
+        }
+      })
+      .addCase(deletePost.fulfilled, (state, action) => {
+        const { id } = action.payload;
+        const posts = state.posts.filter((post) => post.id !== id);
+        state.posts = posts;
+        console.log(action, "action in deletePost fulfilled");
       });
   },
 });
@@ -175,7 +209,7 @@ export const postsSlice = createSlice({
 export const selectAllPosts = (state: RootState) => state.posts.posts;
 export const getPostsStatus = (state: RootState) => state.posts.status;
 export const getPostsError = (state: RootState) => state.posts.error;
-export const getPostById = (state: RootState, postId:number) => {
+export const getPostById = (state: RootState, postId: number) => {
   const posts: SinglePost[] = state.posts.posts;
   return posts.find((post) => post.id === postId);
 };
