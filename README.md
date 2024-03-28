@@ -1,3 +1,20 @@
+## RTK posts demo app
+
+see `main0.tsx` and `App.tsx`
+
+## RTK query demo with To do App and JSON Server
+`main.tsx` and `App2.tsx` and `features/todos` and `features/api`
+
+`pnpm add json-server` ( install it locally)
+`npx json-server data/db.json --port 3500` ( need to add npx to run it)
+getting an error `File db.json not found`
+https://github.com/typicode/json-server
+`pnpm rm json-server` ( json-server@1.0.0alpha is not working)
+let's install the stable version
+https://github.com/typicode/json-server/tree/v0
+`pnpm add json-server@0.17.4`
+
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
@@ -17,12 +34,12 @@ If you are developing a production application, we recommend updating the config
 export default {
   // other rules...
   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
+    ecmaVersion: "latest",
+    sourceType: "module",
+    project: ["./tsconfig.json", "./tsconfig.node.json"],
     tsconfigRootDir: __dirname,
   },
-}
+};
 ```
 
 - Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`

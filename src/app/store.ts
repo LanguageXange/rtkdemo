@@ -14,6 +14,10 @@ const middlewares: Middleware[] = []
 if(import.meta.env.DEV){
     middlewares.push(logger)
 }
+
+// TO DO -
+// add our todosSlice to the store
+// https://redux-toolkit.js.org/tutorials/rtk-query#add-the-service-to-your-store
 export const store = configureStore({
     reducer:{
         counter: counterReducer,
