@@ -7,9 +7,7 @@ import { PostExerpt } from "./Post";
 import { useParams } from "react-router-dom";
 
 const PostPage = () => {
-
   const { postId } = useParams();
-
   const singlePost = useSelector((state: RootState) =>
     getPostById(state, Number(postId))
   );
@@ -17,7 +15,7 @@ const PostPage = () => {
   return (
     <section>
       <h1>Single Post</h1>
-      {singlePost  ? <PostExerpt post={singlePost} /> : <p>post not found</p>}
+      {singlePost  ? <PostExerpt postId={singlePost.id} /> : <p>post not found</p>}
     </section>
   );
 };

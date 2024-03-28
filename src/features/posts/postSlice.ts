@@ -1,6 +1,5 @@
 import {
   createSlice,
-  nanoid,
   PayloadAction,
   createSelector,
   createEntityAdapter,
@@ -10,6 +9,27 @@ import { RootState } from "../../app/store";
 import { sub } from "date-fns";
 import axios from "axios";
 const POST_URL = "https://jsonplaceholder.typicode.com/posts";
+
+const postsAdapter = createEntityAdapter({
+  sortComparer:(a, b) =>
+  b.postedOn.localeCompare(a.postedOn)
+})
+
+// {ids: [], entities:{}, status:"idle",error:null, count:0}
+const initialState = postsAdapter.getInitialState({
+  status: "idle", // "idle" | "loading" | "succeeded" | "failed",
+  error: null,
+  count: 0,
+})
+
+// const initialState = {
+//   posts: [] as SinglePost[],
+//   status: "idle", // "idle" | "loading" | "succeeded" | "failed",
+//   error: null,
+//   count: 0, // for demonstrating optimization
+// };
+
+
 
 // thunk middle ware 1919
 // https://redux-toolkit.js.org/api/createAsyncThunk
@@ -72,47 +92,16 @@ export const addNewPost = createAsyncThunk(
   }
 );
 
-// const initialState = [
-//   {
-//     id: "1",
-//     title: "First Title",
-//     content: "some content",
-//     postedOn: sub(new Date(), { minutes: 10 }).toISOString(),
-//     userId: "1",
-//     reactions: {
-//       thumbsUp: 0,
-//       heart: 0,
-//       coffee: 0,
-//     },
-//   },
-//   {
-//     id: "2",
-//     title: "Second Title",
-//     content: "some more content",
-//     postedOn: sub(new Date(), { minutes: 10 }).toISOString(),
-//     userId: "1",
-//     reactions: {
-//       thumbsUp: 0,
-//       heart: 0,
-//       coffee: 0,
-//     },
-//   },
-// ];
 
 export interface SinglePost {
   id: string;
   title: string;
-  content: string;
+  body: string;
   userId: string;
   postedOn: string;
   reactions: { thumbsUp: number; heart: number; coffee: number };
 }
-const initialState = {
-  posts: [] as SinglePost[],
-  status: "idle", // "idle" | "loading" | "succeeded" | "failed",
-  error: null,
-  count: 0, // for demonstrating optimization
-};
+
 // https://redux-toolkit.js.org/api/createslice#customizing-generated-action-creators
 export const postsSlice = createSlice({
   name: "post",
@@ -127,7 +116,8 @@ export const postsSlice = createSlice({
     ) {
       const { postId, reaction } = action.payload;
       //console.log(action.payload, "what is action payalod");
-      const existPost = state.posts.find((post) => post.id == postId);
+     // const existPost = state.posts.find((post) => post.id == postId);
+      const existPost = state.entities[postId]
       if (existPost) {
         existPost.reactions[reaction]++;
       }
@@ -136,7 +126,7 @@ export const postsSlice = createSlice({
       state.count++;
     },
   },
-
+// https://redux-toolkit.js.org/api/createEntityAdapter#crud-functions
   extraReducers(builder) {
     builder
       .addCase(fetchPosts.pending, (state) => {
@@ -157,7 +147,11 @@ export const postsSlice = createSlice({
           return post;
         });
 
-        state.posts = loadedPosts;
+        // adding fetched post to the state
+        //state.posts = loadedPosts;
+
+        // using adapter
+        postsAdapter.upsertMany(state, loadedPosts)
       })
       .addCase(fetchPosts.rejected, (state, action) => {
         (state.status = "failed"), (state.error = action.error.message);
@@ -175,23 +169,28 @@ export const postsSlice = createSlice({
           action.payload,
           "what is action payload in addNewPost Thunk"
         );
-        state.posts.push(action.payload);
+        //state.posts.push(action.payload);
+        // using adapter
+        postsAdapter.addOne(state,action.payload)
       })
       .addCase(updatePost.fulfilled, (state, action) => {
-        const { id, title } = action.payload;
-        const existPost = state.posts.find((post) => post.id === id);
-        if (existPost) {
-          existPost.title = title;
-        }
+        // const { id, title } = action.payload;
+        // const existPost = state.posts.find((post) => post.id === id);
+        // if (existPost) {
+        //   existPost.title = title;
+        // }
+        postsAdapter.upsertOne(state,action.payload)
       })
       .addCase(updatePost.pending, (state, action) => {
         console.log(action, "what is action in pending");
       })
       .addCase(deletePost.fulfilled, (state, action) => {
         const { id } = action.payload;
-        const posts = state.posts.filter((post) => post.id !== id);
-        state.posts = posts;
-        console.log(action, "action in deletePost fulfilled");
+        // const posts = state.posts.filter((post) => post.id !== id);
+        // state.posts = posts;
+
+        postsAdapter.removeOne(state,id)
+  
       });
   },
 });
@@ -202,15 +201,28 @@ export const postsSlice = createSlice({
 // each individual case reducer inside of extraReducers
 // will NOT generate a new action type or action creator.
 
+
+// Using Adapter getSelectors and rename it 
+// https://redux-toolkit.js.org/api/createEntityAdapter#selector-functions
+
+export const {
+selectAll:selectAllPosts,
+selectById:getPostById,
+selectIds:selectPostIds
+} = postsAdapter.getSelectors((state)=> state.posts)
+
+
+
 // SELECTORS
-export const selectAllPosts = (state: RootState) => state.posts.posts;
+// export const selectAllPosts = (state: RootState) => state.posts.posts;
+
+// export const getPostById = (state: RootState, postId: number) => {
+//   const posts: SinglePost[] = state.posts.posts;
+//   return posts.find((post) => post.id === postId);
+// };
+
 export const getPostsStatus = (state: RootState) => state.posts.status;
 export const getPostsError = (state: RootState) => state.posts.error;
-export const getPostById = (state: RootState, postId: number) => {
-  const posts: SinglePost[] = state.posts.posts;
-  return posts.find((post) => post.id === postId);
-};
-
 export const getCount = (state: RootState) => state.posts.count;
 
 // memoized selector
@@ -222,3 +234,4 @@ export const selectPostsByUser = createSelector(
 export const { addReaction, increaseCount } = postsSlice.actions;
 
 export default postsSlice.reducer;
+

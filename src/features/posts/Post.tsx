@@ -1,5 +1,11 @@
 import { useSelector } from "react-redux";
-import { selectAllPosts, getPostsError, getPostsStatus } from "./postSlice";
+import {
+  getPostsError,
+  getPostsStatus,
+  selectPostIds,
+  getPostById,
+  SinglePost,
+} from "./postSlice";
 import PostForm from "./PostForm";
 import PostAuthor from "./PostAuthor";
 import { parseISO, formatDistanceToNow } from "date-fns";
@@ -17,13 +23,14 @@ const TimeAgo = ({ timestamp }: { timestamp: string }) => {
   return <p> {timeAgo}</p>;
 };
 
-export const PostExerpt = ({ post }) => {
+export const PostExerpt = ({ postId }) => {
+  // console.log(useSelector(state => state.posts.entities))
+  const post: SinglePost = useSelector((state) => getPostById(state, postId));
+
   return (
     <article style={{ border: "1px solid #999", marginBottom: "10px" }}>
       <Link to={`${post.id}`}>
-        <h2>
-          {post.title} with post id {post.id}
-        </h2>
+        <h2>{post.title}</h2>
       </Link>
 
       <p>{post.body}</p>
@@ -36,21 +43,19 @@ export const PostExerpt = ({ post }) => {
 };
 
 // https://date-fns.org/v3.6.0/docs/sub
+
 const Post = () => {
   console.log("all posts");
-  const posts = useSelector(selectAllPosts);
+  const orderedPostIds = useSelector(selectPostIds);
   const postsStatus = useSelector(getPostsStatus);
   const postsError = useSelector(getPostsError);
-
   let content;
   if (postsStatus === "loading") {
     content = <p>Loading...</p>;
   } else if (postsStatus === "succeeded") {
-    const orderedPosts = [...posts].sort((a, b) =>
-      b.postedOn.localeCompare(a.postedOn)
-    );
-    content = orderedPosts.map((post) => (
-      <PostExerpt post={post} key={post.title} />
+    // we've already sorted the posts in createEntityAdapter
+    content = orderedPostIds.map((postId) => (
+      <PostExerpt postId={postId} key={postId} />
     ));
   } else if (postsStatus === "failed") {
     content = <p>{postsError}</p>;
