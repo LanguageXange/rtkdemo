@@ -6,11 +6,19 @@ import App2 from "./App2";
 import { ApiProvider } from "@reduxjs/toolkit/query/react";
 import { apiSlice } from "./features/api/apiSlice";
 
+import { Provider } from "react-redux";
+import { store } from "./app/store.ts";
 // https://redux-toolkit.js.org/rtk-query/api/ApiProvider
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ApiProvider api={apiSlice}>
+    <Provider store={store}>
       <App2 />
-    </ApiProvider>
+    </Provider>
   </React.StrictMode>
 );
+
+{
+  /* <ApiProvider api={apiSlice}> 
+<App2 /> 
+</ApiProvider>  */
+}

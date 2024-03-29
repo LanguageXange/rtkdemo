@@ -3,11 +3,14 @@ import counterReducer from '../features/counter/counterSlice'
 import postsReducer from '../features/posts/postSlice'
 import usersReducer from '../features/users/userSlice'
 import { logger } from './mylogger'
+import { apiSlice } from '../features/api/apiSlice'
+
+
 
 // https://redux-toolkit.js.org/api/getDefaultMiddleware
 
 // https://github.com/reduxjs/redux-toolkit/issues/368
-const middlewares: Middleware[] = []
+const middlewares: Middleware[] = [apiSlice.middleware]
 
 // https://vitejs.dev/guide/env-and-mode
 // if it's development mode
@@ -22,7 +25,8 @@ export const store = configureStore({
     reducer:{
         counter: counterReducer,
         posts: postsReducer,
-        users:usersReducer
+        users:usersReducer,
+        [apiSlice.reducerPath]:apiSlice.reducer
     },
     middleware:(getDefaultMiddleware)=>getDefaultMiddleware().concat(middlewares),
 })
