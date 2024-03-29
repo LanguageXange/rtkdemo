@@ -1,13 +1,21 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 // https://github.com/gitdagray/react_redux_toolkit/blob/main/06_lesson/src/features/api/apiSlice.js
+
+export interface ToDo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
+type Response = ToDo[]
 export const apiSlice = createApi({
   reducerPath: "mytodos",
   baseQuery: fetchBaseQuery({ baseUrl: "http://localhost:3500" }),
   tagTypes: ["Todos"],
   endpoints: (builder) => ({
-    getTodos: builder.query({
+    getTodos: builder.query<Response, void>({
       query: () => "/todos",
-      transformResponse: (res) => res.sort((a, b) => b.id - a.id),
+      transformResponse: (res: Response) => res.sort((a, b) => b.id - a.id),
       providesTags: ["Todos"],
     }),
     addTodo: builder.mutation({
@@ -16,9 +24,9 @@ export const apiSlice = createApi({
         method: "POST",
         body: todo,
       }),
-      invalidatesTags: ["Todos"],
+      invalidatesTags: ["Todos"], // THIS IS IMPORTANT otherwise it shows the cached data
     }),
-    updateTodo: builder.mutation({
+    toggleTodo: builder.mutation({
       query: (todo) => ({
         url: `/todos/${todo.id}`,
         method: "PATCH",
@@ -26,6 +34,7 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ["Todos"],
     }),
+
     deleteTodo: builder.mutation({
       query: ({ id }) => ({
         url: `/todos/${id}`,
@@ -37,11 +46,11 @@ export const apiSlice = createApi({
   }),
 });
 
+//console.log(apiSlice,'what is apiSlice')
 export const {
   useGetTodosQuery,
   useAddTodoMutation,
-  useUpdateTodoMutation,
+  useToggleTodoMutation,
+
   useDeleteTodoMutation,
 } = apiSlice;
-
-// 1008 6th

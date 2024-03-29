@@ -15,6 +15,11 @@ https://github.com/typicode/json-server/tree/v0
 `pnpm add json-server@0.17.4`
 
 
+Run the app:
+`pnpm run dev`
+`npx json-server data/db.json --port 3500`
+
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

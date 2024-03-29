@@ -1,8 +1,9 @@
 import {
   useGetTodosQuery,
-  useUpdateTodoMutation,
   useDeleteTodoMutation,
   useAddTodoMutation,
+  ToDo,
+  useToggleTodoMutation,
 } from "../api/apiSlice";
 import { useState } from "react";
 
@@ -11,6 +12,8 @@ import { useState } from "react";
 const TodoList = () => {
   const [newTodo, setNewTodo] = useState("");
 
+  // {currentData, data, endpointName, isError, isFetching, isLoading, isSuccess, status, ...}
+
   const {
     data: todos,
     isLoading,
@@ -18,14 +21,17 @@ const TodoList = () => {
     isError,
     error,
   } = useGetTodosQuery();
-  const [addTodo] = useAddTodoMutation();
-  const [updateTodo] = useUpdateTodoMutation();
+  // mutation returns an array [fn , object]
+  const [addMyTodo, { isLoading: isLoadingNewTodo }] = useAddTodoMutation();
+  const [toggleTodo] = useToggleTodoMutation();
   const [deleteTodo] = useDeleteTodoMutation();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    addTodo({ userId: 1, title: newTodo, completed: false });
-    setNewTodo("");
+    if (newTodo) {
+      addMyTodo({ userId: 1, title: newTodo, completed: false });
+      setNewTodo("");
+    }
   };
 
   const newItemSection = (
@@ -40,15 +46,17 @@ const TodoList = () => {
           placeholder="Enter new todo"
         />
       </div>
-      <button className="submit">submit</button>
+      <button className="submit">
+        {isLoadingNewTodo ? "submit ..." : "submit"}
+      </button>
     </form>
   );
 
   let content;
   if (isLoading) {
-    content = <p>Loading...</p>;
+    content = <p>Loading to dos...</p>;
   } else if (isSuccess) {
-    content = todos.map((todo) => {
+    content = todos.map((todo: ToDo) => {
       //JSON.stringify(todos)
       return (
         <article key={todo.id}>
@@ -56,12 +64,14 @@ const TodoList = () => {
             <input
               type="checkbox"
               checked={todo.completed}
-              id={todo.id}
+              id={`${todo.id}`}
               onChange={() =>
-                updateTodo({ ...todo, completed: !todo.completed })
+                toggleTodo({ ...todo, completed: !todo.completed })
               }
             />
-            <label htmlFor={todo.id}>{todo.title}</label>
+            <label htmlFor={`${todo.id}`}>
+              {todo.title} #{todo.id}
+            </label>
           </div>
           <button className="trash" onClick={() => deleteTodo({ id: todo.id })}>
             delete
