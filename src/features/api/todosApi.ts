@@ -8,7 +8,7 @@ export interface ToDo {
   completed: boolean;
 }
 type Response = ToDo[]
-export const apiSlice = createApi({
+export const todosApi = createApi({
   reducerPath: "mytodos",
   baseQuery: fetchBaseQuery({ baseUrl: "http://localhost:3500" }),
   tagTypes: ["Todos"],
@@ -53,4 +53,4 @@ export const {
   useToggleTodoMutation,
 
   useDeleteTodoMutation,
-} = apiSlice;
+} = todosApi;

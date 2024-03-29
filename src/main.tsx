@@ -3,8 +3,6 @@ import ReactDOM from "react-dom/client";
 import "./index.css";
 import App2 from "./App2";
 
-import { ApiProvider } from "@reduxjs/toolkit/query/react";
-import { apiSlice } from "./features/api/apiSlice";
 
 import { Provider } from "react-redux";
 import { store } from "./app/store.ts";
