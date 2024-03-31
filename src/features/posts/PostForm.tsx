@@ -1,18 +1,15 @@
 import { SetStateAction, Dispatch, useState, ChangeEvent } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 
 import { selectAllUsers, User } from "../users/userSlice";
-import { addNewPost } from "./postSlice"; // thunk
+import { useAddNewPostMutation } from "./postSlice";
 
 const PostForm: React.FC = () => {
-  const dispatch = useDispatch();
-
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [userId, setUserId] = useState("");
 
-  const [requestStatus, setRequestStatus] = useState("idle");
-
+  const [addNewPost, { isLoading }] = useAddNewPostMutation();
   const users = useSelector(selectAllUsers);
 
   const handleChange =
@@ -27,27 +24,19 @@ const PostForm: React.FC = () => {
   const onAuthorChanged = handleChange(setUserId);
 
   // refactor
-  const canSave =
-    [title, content, userId].every(Boolean) && requestStatus === "idle";
+  const canSave = [title, content, userId].every(Boolean) && !isLoading;
 
   // https://redux-toolkit.js.org/api/createAsyncThunk#unwrapping-result-actions
   const onSavePostClicked = async () => {
     if (canSave) {
       try {
-        setRequestStatus("pending");
-
-        const result = await dispatch(
-          addNewPost({ title, body: content, userId })
-        ).unwrap();
-        console.log(result, "what is result");
+        await addNewPost({ title, body: content, userId }).unwrap();
 
         setTitle("");
         setContent("");
         setUserId("");
       } catch (error) {
         console.error("failed to save", error);
-      } finally {
-        setRequestStatus("idle");
       }
     }
   };
@@ -60,7 +49,7 @@ const PostForm: React.FC = () => {
   return (
     <section style={{ border: "2px solid #555" }}>
       <h2>Add a New Post</h2>
-  
+
       <form
         style={{
           display: "flex",
@@ -90,7 +79,7 @@ const PostForm: React.FC = () => {
           onChange={onContentChanged}
         />
         <button type="button" onClick={onSavePostClicked} disabled={!canSave}>
-        {requestStatus === "pending" ? "Saving ..." : "Submit"}
+          {isLoading ? "Saving ..." : "Submit"}
         </button>
       </form>
     </section>

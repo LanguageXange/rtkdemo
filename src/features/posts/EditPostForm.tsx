@@ -1,7 +1,11 @@
 import { ChangeEvent, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
-import { getPostById, updatePost, deletePost } from "./postSlice";
+import {
+  getPostById,
+  useUpdatePostMutation,
+  useDeletePostMutation,
+} from "./postSlice";
 import { RootState } from "../../app/store";
 
 // For simplicity, update the post title only
@@ -11,8 +15,10 @@ const EditPostForm = () => {
   const singlePost = useSelector((state: RootState) =>
     getPostById(state, Number(postId))
   );
-  const [requestStatus, setRequestStatus] = useState("idle");
-  const dispatch = useDispatch();
+
+  const [updatePost, { isLoading }] = useUpdatePostMutation();
+  const [deletePost] = useDeletePostMutation();
+
   const [title, setTitle] = useState(singlePost?.title);
 
   if (!singlePost) {
@@ -23,36 +29,28 @@ const EditPostForm = () => {
     );
   }
 
-  const canSave = Boolean(title) && requestStatus === "idle";
+  const canSave = Boolean(title) && !isLoading;
   const onTitleChanged = (e: ChangeEvent<HTMLInputElement>) =>
     setTitle(e.target.value);
 
   const onSavePostClick = async () => {
     if (!title) return;
     try {
-      setRequestStatus("pending");
-      await dispatch(updatePost({ title, id: postId })).unwrap();
+      await updatePost({ title, id: postId }).unwrap();
       setTitle("");
       navigate(`/myposts/${postId}`);
     } catch (error) {
       console.error(error.message, "save post error");
-    } finally {
-      setRequestStatus("idle");
     }
   };
 
   const onDeletePost = async () => {
     try {
-      setRequestStatus("pending");
-      const result = await dispatch(deletePost({ id: postId })).unwrap();
-      //console.log(result, "what is dispatch deletePost unwrap");
-
+      await deletePost(postId).unwrap();
       navigate(`/myposts`);
     } catch (error) {
       console.error(error);
-    } finally {
-      setRequestStatus("idle");
-    }
+    } 
   };
   return (
     <div>
@@ -76,7 +74,7 @@ const EditPostForm = () => {
         <button
           type="button"
           onClick={onDeletePost}
-          disabled={requestStatus !== "idle"}
+          disabled={isLoading}
         >
           Delete Post
         </button>

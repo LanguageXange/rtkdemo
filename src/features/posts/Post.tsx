@@ -1,10 +1,9 @@
 import { useSelector } from "react-redux";
 import {
-  getPostsError,
-  getPostsStatus,
   selectPostIds,
   getPostById,
   SinglePost,
+  useGetPostsQuery
 } from "./postSlice";
 import PostForm from "./PostForm";
 import PostAuthor from "./PostAuthor";
@@ -45,29 +44,20 @@ export const PostExerpt = ({ postId }) => {
 // https://date-fns.org/v3.6.0/docs/sub
 
 const Post = () => {
-  console.log("all posts");
+  const {isLoading, isSuccess, isError, error} = useGetPostsQuery()
   const orderedPostIds = useSelector(selectPostIds);
-  const postsStatus = useSelector(getPostsStatus);
-  const postsError = useSelector(getPostsError);
+
   let content;
-  if (postsStatus === "loading") {
+  if (isLoading) {
     content = <p>Loading...</p>;
-  } else if (postsStatus === "succeeded") {
+  } else if (isSuccess) {
     // we've already sorted the posts in createEntityAdapter
     content = orderedPostIds.map((postId) => (
       <PostExerpt postId={postId} key={postId} />
     ));
-  } else if (postsStatus === "failed") {
-    content = <p>{postsError}</p>;
+  } else if (isError) {
+    content = <p>{error}</p>;
   }
-
-  // new posts to appear at the top
-  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare
-  // `refString.localeCompare(compareString)` if negative value, refString occurs before compareString
-  // const orderedPosts = [...posts].sort((a, b) =>
-  //   b.postedOn.localeCompare(a.postedOn)
-  // );
-
   return (
     <>
       <PostForm />

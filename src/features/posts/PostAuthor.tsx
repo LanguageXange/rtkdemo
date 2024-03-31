@@ -5,7 +5,7 @@ import { selectAllUsers } from "../users/userSlice";
 // fake json api userId is number type
 // need to update postSlice as well
 type AuthorProp = {
-  userId: string;
+  userId: number;
 };
 
 const PostAuthor = ({ userId }: AuthorProp) => {

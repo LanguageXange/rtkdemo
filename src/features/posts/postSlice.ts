@@ -1,237 +1,178 @@
-import {
-  createSlice,
-  PayloadAction,
-  createSelector,
-  createEntityAdapter,
-  createAsyncThunk,
-} from "@reduxjs/toolkit";
-import { RootState } from "../../app/store";
+import { createSelector, createEntityAdapter } from "@reduxjs/toolkit";
 import { sub } from "date-fns";
-import axios from "axios";
-const POST_URL = "https://jsonplaceholder.typicode.com/posts";
+import { apiSlice } from "../api/postApi";
 
 const postsAdapter = createEntityAdapter({
-  sortComparer:(a, b) =>
-  b.postedOn.localeCompare(a.postedOn)
-})
-
-// {ids: [], entities:{}, status:"idle",error:null, count:0}
-const initialState = postsAdapter.getInitialState({
-  status: "idle", // "idle" | "loading" | "succeeded" | "failed",
-  error: null,
-  count: 0,
-})
-
-// const initialState = {
-//   posts: [] as SinglePost[],
-//   status: "idle", // "idle" | "loading" | "succeeded" | "failed",
-//   error: null,
-//   count: 0, // for demonstrating optimization
-// };
-
-
-
-// thunk middle ware 1919
-// https://redux-toolkit.js.org/api/createAsyncThunk
-
-export const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => {
-  try {
-    const posts = await axios.get(POST_URL);
-    // console.log(posts.data[0], "post data");
-    //return posts.data.sort(() => Math.random() - 0.5).slice(0, 30);
-    return posts.data.slice(0, 30);
-  } catch (err) {
-    return err.message;
-  }
+  sortComparer: (a, b) => b.postedOn.localeCompare(a.postedOn),
 });
 
-// update post title thunk
-// unable to update post if the ID exceeds 100 (the api only provides 100 posts)
-export const updatePost = createAsyncThunk(
-  "posts/updatePost",
-  async (initialPost) => {
-    const { id } = initialPost;
-    try {
-      const response = await axios.put(`${POST_URL}/${id}`, initialPost);
-      return response.data;
-    } catch (err) {
-      //return err.message;
-      throw Error("unable to update your post sorry!");
-      // return { id: Number(id), error: 500, title: "noooo error" };
-    }
-  }
-);
-
-// delete post thunk
-export const deletePost = createAsyncThunk("posts/deletePost", async (data) => {
-  const { id } = data;
-  try {
-    const response = await axios.delete(`${POST_URL}/${id}`);
-    if (response?.status === 200) {
-      return { id: Number(id), message: "sucessfully delete the post" };
-    }
-
-    return { id: Number(id), message: "unable to delete the post" };
-  } catch (err) {
-    // if we try to delete a post that doesn't exist
-    // /myposts/edit/200
-    return { id, message: err?.message };
-  }
-});
-
-export const addNewPost = createAsyncThunk(
-  "posts/addNewPost",
-  async (initialPost) => {
-    try {
-      const response = await axios.post(POST_URL, initialPost);
-      //console.log(response,'what is response in addNewPost')
-      return response.data;
-    } catch (error) {
-      return error;
-    }
-  }
-);
-
+// {ids: [], entities:{}}
+const initialState = postsAdapter.getInitialState();
 
 export interface SinglePost {
-  id: string;
+  id: number;
   title: string;
   body: string;
-  userId: string;
+  userId: number;
   postedOn: string;
   reactions: { thumbsUp: number; heart: number; coffee: number };
 }
 
-// https://redux-toolkit.js.org/api/createslice#customizing-generated-action-creators
-export const postsSlice = createSlice({
-  name: "post",
-  initialState,
-  reducers: {
-    addReaction(
-      state,
-      action: PayloadAction<{
-        postId: string;
-        reaction: "thumbsUp" | "heart" | "coffee";
-      }>
-    ) {
-      const { postId, reaction } = action.payload;
-      //console.log(action.payload, "what is action payalod");
-     // const existPost = state.posts.find((post) => post.id == postId);
-      const existPost = state.entities[postId]
-      if (existPost) {
-        existPost.reactions[reaction]++;
-      }
-    },
-    increaseCount(state) {
-      state.count++;
-    },
-  },
-// https://redux-toolkit.js.org/api/createEntityAdapter#crud-functions
-  extraReducers(builder) {
-    builder
-      .addCase(fetchPosts.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(fetchPosts.fulfilled, (state, action) => {
-        state.status = "succeeded";
+// replace createSlice with createApi.injectEndPoints
+// code splitting
+// https://redux-toolkit.js.org/rtk-query/usage/code-splitting
+
+type PostResponse = SinglePost[];
+
+// https://github.com/gitdagray/react_redux_toolkit/blob/main/07_lesson/src/features/posts/postsSlice.js
+export const extendedPostApi = apiSlice.injectEndpoints({
+  endpoints: (builder) => ({
+    getPosts: builder.query<PostResponse>({
+      query: () => "/posts",
+      transformResponse: (responseData: PostResponse) => {
         let min = 1;
-        // console.log(action,'what is action')
-        // the json placeholder api doesn't include postedOn and reactions
-        const loadedPosts = action.payload.map((post) => {
-          post.postedOn = sub(new Date(), { minutes: min++ }).toISOString();
-          post.reactions = {
+        const loadedPosts = responseData.map((post) => {
+          if (!post?.postedOn)
+            post.postedOn = sub(new Date(), { minutes: min++ }).toISOString();
+          if (!post?.reactions)
+            post.reactions = {
+              thumbsUp: 0,
+              heart: 0,
+              coffee: 0,
+            };
+          return post;
+        });
+        // https://redux-toolkit.js.org/api/createEntityAdapter#crud-functions
+        // normalized data
+        return postsAdapter.setAll(initialState, loadedPosts);
+      },
+      // https://redux-toolkit.js.org/rtk-query/api/createApi#providestags
+      providesTags: (result) =>
+        result
+          ? [...result.ids.map((id) => ({ type: "Post", id }))]
+          : [{ type: "Post", id: "LIST" }],
+    }),
+
+    getPostByUserId: builder.query({
+      query: (id) => `/posts/?userId=${id}`,
+      transformResponse: (responseData) => {
+        let min = 1;
+        const loadedPosts = responseData.map((post) => {
+          if (!post?.postedOn)
+            post.postedOn = sub(new Date(), { minutes: min++ }).toISOString();
+          if (!post?.reactions)
+            post.reactions = {
+              thumbsUp: 0,
+              heart: 0,
+              coffee: 0,
+            };
+          return post;
+        });
+        // https://redux-toolkit.js.org/api/createEntityAdapter#crud-functions
+        // normalized data
+        return postsAdapter.setAll(initialState, loadedPosts);
+      },
+      providesTags: (result) =>
+        result
+          ? [...result.ids.map((id) => ({ type: "Post", id }))]
+          : [{ type: "Post" }],
+    }),
+
+    addNewPost: builder.mutation({
+      query: (initialPost) => ({
+        url: "/posts",
+        method: "POST",
+        body: {
+          ...initialPost,
+          userId: Number(initialPost.userId),
+          postedOn: new Date().toISOString(),
+          reactions: {
             thumbsUp: 0,
             heart: 0,
             coffee: 0,
-          };
-          return post;
-        });
-
-        // adding fetched post to the state
-        //state.posts = loadedPosts;
-
-        // using adapter
-        postsAdapter.upsertMany(state, loadedPosts)
-      })
-      .addCase(fetchPosts.rejected, (state, action) => {
-        (state.status = "failed"), (state.error = action.error.message);
-      })
-      .addCase(addNewPost.fulfilled, (state, action) => {
-        // action.payload.id = nanoid(); // make sure id is unique otherwise updatin reactions will update previous post
-        action.payload.userId = Number(action.payload.userId);
-        action.payload.postedOn = new Date().toISOString();
-        action.payload.reactions = {
-          thumbsUp: 0,
-          heart: 0,
-          coffee: 0,
-        };
-        console.log(
-          action.payload,
-          "what is action payload in addNewPost Thunk"
+          },
+        },
+      }),
+      invalidatesTags: [{ type: "Post" }],
+      // https://redux-toolkit.js.org/rtk-query/usage/automated-refetching#advanced-invalidation-with-abstract-tag-ids
+    }),
+    updatePost: builder.mutation({
+      query: (initialPost) => ({
+        url: `/posts/${initialPost.id}`,
+        method: "PUT",
+        body: {
+          ...initialPost,
+          postedOn: new Date().toISOString(),
+        },
+      }),
+      invalidatesTags: (result, error, arg) => [{ type: "Post", id: arg.id }],
+    }),
+    deletePost: builder.mutation({
+      query: (postId) => ({
+        url: `/posts/${postId}`,
+        method: "DELETE",
+        body: { postId },
+      }),
+      invalidatesTags: (result, error, arg) => [{ type: "Post", id: arg }],
+    }),
+    // optimistically update the cached data
+    // https://redux-toolkit.js.org/rtk-query/usage/manual-cache-updates#optimistic-updates
+    addRection: builder.mutation({
+      query: ({ postId, reactions }) => ({
+        url: `/posts/${postId}`,
+        method: "PATCH",
+        body: { reactions },
+      }),
+      async onQueryStarted(
+        { postId, reactions },
+        { dispatch, queryFulfilled }
+      ) {
+        // `updateQueryData` requires the endpoint name and cache key arguments,
+        // so it knows which piece of cache state to update
+        const patchResult = dispatch(
+          extendedPostApi.util.updateQueryData(
+            "getPosts",
+            undefined,
+            (draft) => {
+              // The `draft` is Immer-wrapped and can be "mutated" like in createSlice
+              const post = draft.entities[postId];
+              if (post) post.reactions = reactions;
+            }
+          )
         );
-        //state.posts.push(action.payload);
-        // using adapter
-        postsAdapter.addOne(state,action.payload)
-      })
-      .addCase(updatePost.fulfilled, (state, action) => {
-        // const { id, title } = action.payload;
-        // const existPost = state.posts.find((post) => post.id === id);
-        // if (existPost) {
-        //   existPost.title = title;
-        // }
-        postsAdapter.upsertOne(state,action.payload)
-      })
-      .addCase(updatePost.pending, (state, action) => {
-        console.log(action, "what is action in pending");
-      })
-      .addCase(deletePost.fulfilled, (state, action) => {
-        const { id } = action.payload;
-        // const posts = state.posts.filter((post) => post.id !== id);
-        // state.posts = posts;
-
-        postsAdapter.removeOne(state,id)
-  
-      });
-  },
+        try {
+          await queryFulfilled; // wait for the promise to fulfil
+        } catch {
+          patchResult.undo(); // otherwise we undo the action
+        }
+      },
+    }),
+  }),
 });
-// https://redux-toolkit.js.org/api/createslice#extrareducers
-
-// extraReducers allows createSlice to respond and update its own state
-// in response to other action types besides the types it has generated.
-// each individual case reducer inside of extraReducers
-// will NOT generate a new action type or action creator.
-
-
-// Using Adapter getSelectors and rename it 
-// https://redux-toolkit.js.org/api/createEntityAdapter#selector-functions
 
 export const {
-selectAll:selectAllPosts,
-selectById:getPostById,
-selectIds:selectPostIds
-} = postsAdapter.getSelectors((state)=> state.posts)
+  useGetPostsQuery,
+  useGetPostByUserIdQuery,
+  useUpdatePostMutation,
+  useAddNewPostMutation,
+  useDeletePostMutation,
+  useAddRectionMutation,
+} = extendedPostApi;
 
-
-
-// SELECTORS
-// export const selectAllPosts = (state: RootState) => state.posts.posts;
-
-// export const getPostById = (state: RootState, postId: number) => {
-//   const posts: SinglePost[] = state.posts.posts;
-//   return posts.find((post) => post.id === postId);
-// };
-
-export const getPostsStatus = (state: RootState) => state.posts.status;
-export const getPostsError = (state: RootState) => state.posts.error;
-export const getCount = (state: RootState) => state.posts.count;
-
-// memoized selector
-export const selectPostsByUser = createSelector(
-  [selectAllPosts, (state, userId) => userId],
-  (posts, userId) => posts.filter((post) => post.userId === userId)
+// returns the query result object
+export const selectPostsResult = extendedPostApi.endpoints.getPosts.select();
+//console.log(selectPostsResult, "selectPostsResult");
+// Creates memoized selector
+const selectPostsData = createSelector(
+  selectPostsResult,
+  (postsResult) => postsResult.data // normalized state object with ids & entities
 );
+console.log(selectPostsData, "what is selectPostsData");
 
-export const { addReaction, increaseCount } = postsSlice.actions;
-
-export default postsSlice.reducer;
-
+export const {
+  selectAll: selectAllPosts,
+  selectById: getPostById,
+  selectIds: selectPostIds,
+} = postsAdapter.getSelectors(
+  (state) => selectPostsData(state) ?? initialState
+);

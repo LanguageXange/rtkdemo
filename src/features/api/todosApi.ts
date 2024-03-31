@@ -46,7 +46,6 @@ export const todosApi = createApi({
   }),
 });
 
-//console.log(apiSlice,'what is apiSlice')
 export const {
   useGetTodosQuery,
   useAddTodoMutation,

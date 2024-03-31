@@ -1,30 +1,30 @@
-import { useDispatch } from "react-redux";
-import { addReaction, SinglePost } from "./postSlice";
+import { SinglePost, useAddRectionMutation } from "./postSlice";
 
 type PostProp = {
   post: SinglePost;
 };
 type EmojiName = "thumbsUp" | "heart" | "coffee";
 
-// TO DO - Update Reactions should not cause Post to re-render
 const ReactionButton = ({ post }: PostProp) => {
-  const dispatch = useDispatch();
-
   const emojis: Record<EmojiName, string> = {
     thumbsUp: "👍",
     heart: "❤️",
     coffee: "☕",
   };
 
+  const [addReaction] = useAddRectionMutation();
+
   const reactionBtns = Object.entries(emojis).map(([name, emoji]) => {
     return (
       <button
         key={name}
-        onClick={() =>
-          dispatch(
-            addReaction({ postId: post.id, reaction: name as EmojiName })
-          )
-        }
+        onClick={async () => {
+          const newVal = post.reactions[name]+1
+          await addReaction({
+            postId: post.id,
+            reactions: { ...post.reactions, [name]: newVal },
+          });
+        }}
       >
         {emoji} {post.reactions[name as EmojiName]}
       </button>
